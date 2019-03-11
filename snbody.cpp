@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <limits>
 #include <stdio.h>
 #include <omp.h>
 #include <stdio.h>
@@ -13,6 +14,7 @@
 #define TIMESTEP 0.1
 
 double G = 6.67e-11;
+int num_planets;
 
 using namespace std;
 
@@ -45,18 +47,22 @@ double read_timer() {
 void calcForces(std::vector<point> &p){ // p contains all points
   double distance, magnitude, direction;
   double xd, yd; // partial directions
+  double e = 0.001; // margin to avoid zero division
   for(unsigned i = 0; i < p.size() - 1; i++) {
     for(unsigned j = i + 1; j < p.size(); j++) {
-      distance = std::sqrt( std::pow(2, (p[i].x - p[j].x)) +
-  			                    std::pow(2, (p[i].y - p[j].y)));
+      distance = std::sqrt( std::pow((p[i].x - p[j].x), 2 ) +
+  			                    std::pow((p[i].y - p[j].y),2) );
+      if(distance < e){ // avoids dividing by zero
+        distance = e;
+      }
 
-      magnitude = (G * p[i].m * p[j].m) / std::pow(2, distance);
+      magnitude = (G * p[i].m * p[j].m) / std::pow(distance, 2);
 
       xd = p[j].x - p[i].x; // direction with respect to x
       yd = p[j].y - p[i].y; // direction with respect to y
       // printf("did we get here?\n");
       /* update forces */
-      p[i].fx = p[i].fx + magnitude * xd / distance;
+      p[i].fx = p[i].fx + magnitude * xd / distance; // make not inf
       p[j].fx = p[j].fx - magnitude * xd / distance;
       p[i].fy = p[i].fy + magnitude * yd / distance;
       p[j].fy = p[j].fy - magnitude * yd / distance;
@@ -78,7 +84,8 @@ void moveBodies(std::vector<point> &p) {
     p[i].y = p[i].y + dpy;
 
     // cout << "node "<< i << " has position [" << p[i].x << "][" << p[i].y << "]" << endl;
-    cout << p[i].x << " " << p[i].y << " "  << i +0.5 << endl;
+    double color = i / (double)num_planets;
+    cout << p[i].x << " " << p[i].y << " "  << color << endl;
 
     p[i].fx = p[i].fy = 0.0; //reset force vector
 
@@ -98,33 +105,50 @@ void createBody(double xp, double yp, double vx, double vy, double fx, double fy
   bodies.push_back(*newPoint);
 }
 
+// used for random numbers
+double r(int range) {
+  int imax = std::numeric_limits<int>::max();
+  double whole = rand() % range;
+  // printf("rand = %d\n", rand());
+  double fraction = (double) (rand() % 10000) / 10000;
+  // printf("fraction %lf\n", fraction);
+  double retval = whole + fraction;
+  if((int)retval % 2) // allow for negative
+    retval = -retval;
+  // printf("retval is %lf\n", retval);
+
+  return retval;// random double
+}
+
+
 int main(int argc, char* argv[]){
   int num_iterations = (argc > 1) ? atoi(argv[1]): 100;
-
+  num_planets = (argc > 2) ? atoi(argv[2]): 10;
   /* create bodies */
   vector<point> bodies;
   // just for fun
-  G = 0.1; // This greatly increase the gravity
+  G = 1.0; // This greatly increase the gravity
 
   // args are in form: (xp, yp, vx, vy, fx, fy, m, &bodies)
-  createBody(2, 1.5, 0.3, 0.4, -2,  2, 1, bodies);
-  createBody(3, 1, .5, 0.2, -3, 0, 1, bodies);
-  // createBody(15, 1, -2, 0.2, 3, 3, 3, bodies);
+
+  srand( time(NULL) ); // set seed for random
+
+  // create the central and heavier body
+  createBody(0, 0, 0, 0, r(10), r(10), abs(r(20)) + 10, bodies);
+  for(int i = 1; i < num_planets; i++) {
+    createBody(r(100), r(100), r(4), r(4), r(10), r(10), abs(r(4)) + 1, bodies);
+  }
 
   double start_time, end_time; /* start and end times */
   start_time = read_timer();
 
   /* uses TIMESTEP for making time discrete */
   for(int i = 0; i < num_iterations; i++){
-    // printf("iteration %d\n", i);
     /* calculateForces */
-    // printf("calculating forces\n");
     calcForces(bodies);
 
-    // printf("moving bodies\n");
     /* move bodies */
     moveBodies(bodies);
-
   }
   end_time = read_timer();
 
