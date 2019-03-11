@@ -142,6 +142,8 @@ int main(int argc, char* argv[]){
   double start_time, end_time; /* start and end times */
   start_time = read_timer();
 
+  srand( time(NULL) ); // set seed for random
+
   /* uses TIMESTEP for making time discrete */
   for(int i = 0; i < num_iterations; i++){
     /* calculateForces */
