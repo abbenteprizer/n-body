@@ -4,7 +4,6 @@
 #include <ctime>
 #include <cstdlib>
 #include <limits>
-#include <stdio.h>
 #include <omp.h>
 #include <stdio.h>
 #include <time.h>
@@ -89,7 +88,7 @@ void moveBodies(std::vector<point> &p) {
     p[i].y = p[i].y + dpy;
 
     double color = (double) i / (double) num_planets;
-    cout << p[i].x << " " << p[i].y << " "  << color  << endl;
+    std::cout << p[i].x << " " << p[i].y << " "  << color  << endl;
 
     p[i].fx = p[i].fy = 0.0; //reset force vector
   }

@@ -85,7 +85,7 @@ void moveBodies(std::vector<point> &p) {
 
     // cout << "node "<< i << " has position [" << p[i].x << "][" << p[i].y << "]" << endl;
     double color = i / (double)num_planets;
-    cout << p[i].x << " " << p[i].y << " "  << color << endl;
+    std::cout << p[i].x << " " << p[i].y << " "  << color << endl;
 
     p[i].fx = p[i].fy = 0.0; //reset force vector
 
