@@ -3,7 +3,7 @@
 #include <vector>
 #include <ctime>
 #include <cstdlib>
-#include <random>
+// #include <random>
 #include <limits>
 #include <stdio.h>
 #include <omp.h>
@@ -52,7 +52,7 @@ void calcForces(std::vector<point> &p){ // p contains all points
   double xd, yd; // partial directions
   double e = 0.001; // margin to avoid zero division
   unsigned j;
-  #pragma omp parallel for private(j, distance, magnitude, xd, yd) firstprivate(p)
+  #pragma omp parallel for private(j, distance, magnitude, xd, yd) 
   for(unsigned i = 0; i < p.size() - 1; i++) {
     for(j = i + 1; j < p.size(); j++) {
       distance = std::sqrt( std::pow((p[i].x - p[j].x), 2) +
