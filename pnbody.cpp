@@ -52,7 +52,7 @@ void calcForces(std::vector<point> &p){ // p contains all points
   double xd, yd; // partial directions
   double e = 0.001; // margin to avoid zero division
   unsigned j;
-  #pragma omp parallel for private(j, distance, magnitude, xd, yd)
+  #pragma omp parallel for private(j, distance, magnitude, xd, yd) firstprivate(p)
   for(unsigned i = 0; i < p.size() - 1; i++) {
     for(j = i + 1; j < p.size(); j++) {
       distance = std::sqrt( std::pow((p[i].x - p[j].x), 2) +
@@ -147,12 +147,18 @@ int main(int argc, char* argv[]){
   start_time = omp_get_wtime();
 
   /* uses TIMESTEP for making time discrete */
-  for(int i = 0; i < num_iterations; i++){
-    /* calculateForces */
-    calcForces(bodies);
-    /* move bodies */
-    moveBodies(bodies);
+  #pragma omp parallel
+  {
+    #pragma omp single
+    {
+      for(int i = 0; i < num_iterations; i++){
+        /* calculateForces */
+        calcForces(bodies);
+        /* move bodies */
+        moveBodies(bodies);
 
+      }
+    }
   }
 
   end_time = omp_get_wtime();
