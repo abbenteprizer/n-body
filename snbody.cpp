@@ -123,8 +123,9 @@ double r(int range) {
 
 
 int main(int argc, char* argv[]){
-  int num_iterations = (argc > 1) ? atoi(argv[1]): 100;
-  num_planets = (argc > 2) ? atoi(argv[2]): 10;
+  num_planets = (argc > 1) ? atoi(argv[1]): 120;
+  int num_iterations = (argc > 2) ? atoi(argv[2]): 1000;
+
   /* create bodies */
   vector<point> bodies;
   // just for fun

@@ -1,15 +1,13 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
-#include <ctime>
 #include <cstdlib>
-#include <limits>
 #include <omp.h>
+#include <limits>
 #include <stdio.h>
 #include <time.h>
-
 #include <sys/time.h>
-
+#include <stdbool.h>
 
 // #define G 6.67e-11
 #define DIMENSION 100
@@ -17,7 +15,6 @@
 
 double G = 6.67e-11;
 int num_planets;
-
 
 using namespace std;
 
@@ -45,28 +42,28 @@ double read_timer() {
     return (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
 }
 
+
+
 void calcForces(std::vector<point> &p){ // p contains all points
-  double distance, magnitude;
+  double distance, magnitude, direction;
   double xd, yd; // partial directions
   double e = 0.001; // margin to avoid zero division
-  unsigned j;
-  #pragma omp parallel for private(j, distance, magnitude, xd, yd) shared(p, e, G) default(none)
   for(unsigned i = 0; i < p.size() - 1; i++) {
-    for(j = i + 1; j < p.size(); j++) {
-      distance = std::sqrt( std::pow((p[i].x - p[j].x), 2) +
-  			                    std::pow((p[i].y - p[j].y), 2) );
-
+    for(unsigned j = i + 1; j < p.size(); j++) {
+      distance = std::sqrt( std::pow((p[i].x - p[j].x), 2 ) +
+  			                    std::pow((p[i].y - p[j].y),2) );
       if(distance < e){ // avoids dividing by zero
         distance = e;
         // printf("too close the distance was %lf\n", distance);
       }
+
       magnitude = (G * p[i].m * p[j].m) / std::pow(distance, 2);
 
       xd = p[j].x - p[i].x; // direction with respect to x
       yd = p[j].y - p[i].y; // direction with respect to y
       // printf("did we get here?\n");
       /* update forces */
-      p[i].fx = p[i].fx + magnitude * xd / distance;
+      p[i].fx = p[i].fx + magnitude * xd / distance; // make not inf
       p[j].fx = p[j].fx - magnitude * xd / distance;
       p[i].fy = p[i].fy + magnitude * yd / distance;
       p[j].fy = p[j].fy - magnitude * yd / distance;
@@ -76,7 +73,6 @@ void calcForces(std::vector<point> &p){ // p contains all points
 
 void moveBodies(std::vector<point> &p) {
   double dvx, dvy, dpx, dpy; // partial velocities and positions
-  // #pragma omp parallel for
   for(unsigned i = 0; i < p.size(); i++) {
     dvx = p[i].fx / p[i].m * TIMESTEP;
     dvy = p[i].fy / p[i].m * TIMESTEP;
@@ -88,10 +84,14 @@ void moveBodies(std::vector<point> &p) {
     p[i].x = p[i].x + dpx; // change position
     p[i].y = p[i].y + dpy;
 
-    double color = (double) i / (double) num_planets;
+    // cout << "node "<< i << " has position [" << p[i].x << "][" << p[i].y << "]" << endl;
+    double color = i / (double)num_planets;
     // printf("%lf %lf %lf\n", p[i].x, p[i].y, color);
+
     p[i].fx = p[i].fy = 0.0; //reset force vector
+
   }
+
 }
 
 void createBody(double xp, double yp, double vx, double vy, double fx, double fy, double m, std::vector<point> &bodies) {
@@ -121,42 +121,42 @@ double r(int range) {
   return retval;// random double
 }
 
+
 int main(int argc, char* argv[]){
   num_planets = (argc > 1) ? atoi(argv[1]): 120;
   int num_iterations = (argc > 2) ? atoi(argv[2]): 1000;
-  int num_threads = (argc > 3) ? atoi(argv[3]) : 4;
-
-
-  omp_set_num_threads(num_threads);
-
-  G = 1.0; // This greatly increase the gravity
-
+  
   /* create bodies */
   vector<point> bodies;
+  // just for fun
+  G = 1.0; // This greatly increase the gravity
+
+  // args are in form: (xp, yp, vx, vy, fx, fy, m, &bodies)
 
   srand( 1234567 );//time(NULL) ); // set seed for random
 
   // create the central and heavier body
   createBody(0, 0, 0, 0, r(10), r(10), abs(r(20)) + 10, bodies);
   for(int i = 1; i < num_planets; i++) {
-    // args are in form: (xp, yp, vx, vy, fx, fy, m, &bodies)
     createBody(r(100), r(100), r(4), r(4), r(10), r(10), abs(r(4)) + 1, bodies);
   }
 
   double start_time, end_time; /* start and end times */
-  start_time = omp_get_wtime();
+  start_time = read_timer();
+
+  srand( time(NULL) ); // set seed for random
 
   /* uses TIMESTEP for making time discrete */
   for(int i = 0; i < num_iterations; i++){
     /* calculateForces */
     calcForces(bodies);
+
     /* move bodies */
     moveBodies(bodies);
-
   }
+  end_time = read_timer();
 
-  end_time = omp_get_wtime();
-  printf("%d %g\n", num_threads, end_time - start_time);
+  printf("%g\n", end_time - start_time);
 
   return 0;
 }

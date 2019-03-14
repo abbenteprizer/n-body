@@ -122,11 +122,9 @@ double r(int range) {
 }
 
 int main(int argc, char* argv[]){
-  num_planets = (argc > 1) ? atoi(argv[1]): 120;
-  int num_iterations = (argc > 2) ? atoi(argv[2]): 1000;
-  int num_threads = (argc > 3) ? atoi(argv[3]) : 4;
-
-
+  int num_iterations = (argc > 1) ? atoi(argv[1]): 100;
+  int num_threads = (argc > 2) ? atoi(argv[2]) : 4;
+  num_planets = (argc > 3) ? atoi(argv[3]) : 50; // global
   omp_set_num_threads(num_threads);
 
   G = 1.0; // This greatly increase the gravity
