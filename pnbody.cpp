@@ -50,15 +50,15 @@ void calcForces(std::vector<point> &p){ // p contains all points
   double xd, yd; // partial directions
   double e = 0.001; // margin to avoid zero division
   unsigned j;
-  #pragma omp parallel for private(j, distance, magnitude, xd, yd) shared(p,e,G) default(none)
+  #pragma omp parallel for private(j, distance, magnitude, xd, yd) shared(p, e, G) default(none)
   for(unsigned i = 0; i < p.size() - 1; i++) {
     for(j = i + 1; j < p.size(); j++) {
       distance = std::sqrt( std::pow((p[i].x - p[j].x), 2) +
   			                    std::pow((p[i].y - p[j].y), 2) );
 
       if(distance < e){ // avoids dividing by zero
-        // distance = e;
-        printf("too close the distance was %lf\n", distance);
+        distance = e;
+        // printf("too close the distance was %lf\n", distance);
       }
       magnitude = (G * p[i].m * p[j].m) / std::pow(distance, 2);
 
@@ -76,6 +76,7 @@ void calcForces(std::vector<point> &p){ // p contains all points
 
 void moveBodies(std::vector<point> &p) {
   double dvx, dvy, dpx, dpy; // partial velocities and positions
+  // #pragma omp parallel for
   for(unsigned i = 0; i < p.size(); i++) {
     dvx = p[i].fx / p[i].m * TIMESTEP;
     dvy = p[i].fy / p[i].m * TIMESTEP;
@@ -88,8 +89,7 @@ void moveBodies(std::vector<point> &p) {
     p[i].y = p[i].y + dpy;
 
     double color = (double) i / (double) num_planets;
-    cout << p[i].x << " " << p[i].y << " "  << color  << endl;
-
+    // printf("%lf %lf %lf\n", p[i].x, p[i].y, color);
     p[i].fx = p[i].fy = 0.0; //reset force vector
   }
 }
@@ -145,18 +145,12 @@ int main(int argc, char* argv[]){
   start_time = omp_get_wtime();
 
   /* uses TIMESTEP for making time discrete */
-  #pragma omp parallel
-  {
-    #pragma omp single
-    {
-      for(int i = 0; i < num_iterations; i++){
-        /* calculateForces */
-        calcForces(bodies);
-        /* move bodies */
-        moveBodies(bodies);
+  for(int i = 0; i < num_iterations; i++){
+    /* calculateForces */
+    calcForces(bodies);
+    /* move bodies */
+    moveBodies(bodies);
 
-      }
-    }
   }
 
   end_time = omp_get_wtime();

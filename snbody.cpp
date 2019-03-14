@@ -54,6 +54,7 @@ void calcForces(std::vector<point> &p){ // p contains all points
   			                    std::pow((p[i].y - p[j].y),2) );
       if(distance < e){ // avoids dividing by zero
         distance = e;
+        // printf("too close the distance was %lf\n", distance);
       }
 
       magnitude = (G * p[i].m * p[j].m) / std::pow(distance, 2);
@@ -85,7 +86,7 @@ void moveBodies(std::vector<point> &p) {
 
     // cout << "node "<< i << " has position [" << p[i].x << "][" << p[i].y << "]" << endl;
     double color = i / (double)num_planets;
-    cout << p[i].x << " " << p[i].y << " "  << color << endl;
+    // printf("%lf %lf %lf\n", p[i].x, p[i].y, color);
 
     p[i].fx = p[i].fy = 0.0; //reset force vector
 
