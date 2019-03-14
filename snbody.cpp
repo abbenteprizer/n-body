@@ -85,7 +85,7 @@ void moveBodies(std::vector<point> &p) {
 
     // cout << "node "<< i << " has position [" << p[i].x << "][" << p[i].y << "]" << endl;
     double color = i / (double)num_planets;
-    std::cout << p[i].x << " " << p[i].y << " "  << color << endl;
+    cout << p[i].x << " " << p[i].y << " "  << color << endl;
 
     p[i].fx = p[i].fy = 0.0; //reset force vector
 
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
 
   // args are in form: (xp, yp, vx, vy, fx, fy, m, &bodies)
 
-  srand( time(NULL) ); // set seed for random
+  srand( 1234567 );//time(NULL) ); // set seed for random
 
   // create the central and heavier body
   createBody(0, 0, 0, 0, r(10), r(10), abs(r(20)) + 10, bodies);

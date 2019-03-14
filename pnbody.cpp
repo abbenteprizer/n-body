@@ -50,7 +50,7 @@ void calcForces(std::vector<point> &p){ // p contains all points
   double xd, yd; // partial directions
   double e = 0.001; // margin to avoid zero division
   unsigned j;
-  #pragma omp parallel for private(j, distance, magnitude, xd, yd)
+  #pragma omp parallel for private(j, distance, magnitude, xd, yd) shared(p,e,G) default(none)
   for(unsigned i = 0; i < p.size() - 1; i++) {
     for(j = i + 1; j < p.size(); j++) {
       distance = std::sqrt( std::pow((p[i].x - p[j].x), 2) +
@@ -88,7 +88,7 @@ void moveBodies(std::vector<point> &p) {
     p[i].y = p[i].y + dpy;
 
     double color = (double) i / (double) num_planets;
-    std::cout << p[i].x << " " << p[i].y << " "  << color  << endl;
+    cout << p[i].x << " " << p[i].y << " "  << color  << endl;
 
     p[i].fx = p[i].fy = 0.0; //reset force vector
   }
@@ -132,10 +132,10 @@ int main(int argc, char* argv[]){
   /* create bodies */
   vector<point> bodies;
 
-  srand( time(NULL) ); // set seed for random
+  srand( 1234567 );//time(NULL) ); // set seed for random
 
   // create the central and heavier body
-  createBody(0, 0, 0, 0, r(10), r(10), abs(r(20)) + 100, bodies);
+  createBody(0, 0, 0, 0, r(10), r(10), abs(r(20)) + 10, bodies);
   for(int i = 1; i < num_planets; i++) {
     // args are in form: (xp, yp, vx, vy, fx, fy, m, &bodies)
     createBody(r(100), r(100), r(4), r(4), r(10), r(10), abs(r(4)) + 1, bodies);
