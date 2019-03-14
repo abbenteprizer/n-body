@@ -1,4 +1,6 @@
 #!/bin/bash
+g++ -o pnbody pnbody.cpp -fopenmp
+g++ -o snbody snbody.cpp
 
 ./pnbody 120 1000 1  >  data/bench120.dat
 ./pnbody 120 1000 2  >>  data/bench120.dat
