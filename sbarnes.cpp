@@ -141,61 +141,79 @@ double r(int range) {
 
 void insertNode(point p, node *parentNode, int level) {
   if(parentNode->has_particles > 1) {
+    printf("sub");
     // need to put into child, lets determine which
     if(p.x > BOUNDARY / (level + 1)) {
       // were in eastern blocks
       if(p.y > BOUNDARY / (level + 1)) {
         insertNode(p, parentNode->ne, level + 1); // northeast
       } else {
-        insertNode(p, *parentNode->se, level + 1); // southeast
+        insertNode(p, parentNode->se, level + 1); // southeast
       }
     } else {
       // were in western blocks
       if(p.y > BOUNDARY / (level + 1)) {
-        insertNode(p, *parentNode.nw, level + 1); // northeast
+        insertNode(p, parentNode->nw, level + 1); // northeast
       } else {
-        insertNode(p, *parentNode.sw, level + 1); // northeast
+        insertNode(p, parentNode->sw, level + 1); // northeast
       }
     }
 
-  } else if (parentNode.has_particles == 1){
-    *parentNode.nw = (node*) malloc(sizeof(node)); // allocate all children
-    *parentNode.ne = (node*) malloc(sizeof(node));
-    *parentNode.sw = (node*) malloc(sizeof(node));
-    *parentNode.se = (node*) malloc(sizeof(node));
+  } else if (parentNode->has_particles == 1){
+    printf("splitting node into 4\n");
+    parentNode->has_innerpoint = 0;
+    parentNode->has_particles = parentNode->has_particles + 1;
+    // printf("we have this %d many particle\n", parentNode->has_particles);
 
-    *parentNode.nw->level = level + 1; // increase level for child
-    *parentNode.ne->level = level + 1;
-    *parentNode.sw->level = level + 1;
-    *parentNode.se->level = level + 1;
+    parentNode->nw = (node*) malloc(sizeof(node)); // allocate all children
+    parentNode->ne = (node*) malloc(sizeof(node));
+    parentNode->sw = (node*) malloc(sizeof(node));
+    parentNode->se = (node*) malloc(sizeof(node));
 
-    if(*parentNode.innerpoint.x > BOUNDARY / (level + 1)) {
+    parentNode->nw->level = level + 1; // increase level for child
+    parentNode->ne->level = level + 1;
+    parentNode->sw->level = level + 1;
+    parentNode->se->level = level + 1;
+    /* insert innerpoint in subnode */
+    if(parentNode->innerpoint.x > BOUNDARY / (level + 1)) {
       // were in eastern blocks
-      if(*parentNode.innerpoint.y > BOUNDARY / (level + 1)) {
-        insertNode(*parentNode.innerpoint, *parentNode.ne, level + 1); // northeast
-        insertNode(p, *parentNode.ne, level + 1); // northeast
+      if(parentNode->innerpoint.y > BOUNDARY / (level + 1)) {
+        insertNode(parentNode->innerpoint, parentNode->ne, level + 1); // northeast
       } else {
-        insertNode(*parentNode.innerpoint, *parentNode.se, level + 1); // southeast
-        insertNode(p, *parentNode.se, level + 1); // southeast
+        insertNode(parentNode->innerpoint, parentNode->se, level + 1); // southeast
       }
     } else {
       // were in western blocks
-      if(*parentNode.innerpoint.y > BOUNDARY / (level + 1)) {
-        insertNode(*parentNode.innerpoint, *parentNode.nw, level + 1); // northwest
-        insertNode(p, *parentNode.nw, level + 1); // northwest
+      if(parentNode->innerpoint.y > BOUNDARY / (level + 1)) {
+        insertNode(parentNode->innerpoint, parentNode->nw, level + 1); // northwest
       } else {
-        insertNode(*parentNode.innerpoint, *parentNode.sw, level + 1); // southwest
-        insertNode(p, *parentNode.sw, level + 1); // southwest
+        insertNode(parentNode->innerpoint, parentNode->sw, level + 1); // southwest
       }
     }
-    *parentNode.has_innerpoint = 0;
-    *parentNode.has_particles++;
+
+    /* insert p in subnode */
+    if(p.x > BOUNDARY / (level + 1)) {
+      // were in eastern blocks
+      if(p.y > BOUNDARY / (level + 1)) {
+        insertNode(p, parentNode->ne, level + 1); // northeast
+      } else {
+        insertNode(p, parentNode->se, level + 1); // southeast
+      }
+    } else {
+      // were in western blocks
+      if(p.y > BOUNDARY / (level + 1)) {
+        insertNode(p, parentNode->nw, level + 1); // northwest
+      } else {
+        insertNode(p, parentNode->sw, level + 1); // southwest
+      }
+    }
+
   } else {
-    printf("parent has %d\n", *parentNode.has_particles);
-    *parentNode.has_particles++;
-    *parentNode.innerpoint = p;
-    *parentNode.has_innerpoint = 1;
-    printf("added particle on level %d\n", *parentNode.level);
+    // printf("parent has %d\n", parentNode->has_particles);
+    parentNode->has_particles = parentNode->has_particles + 1;
+    parentNode->innerpoint = p;
+    parentNode->has_innerpoint = 1;
+    printf("added particle on level %d\n", parentNode->level);
 
   }
 }
