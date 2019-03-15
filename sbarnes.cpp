@@ -140,21 +140,25 @@ double r(int range) {
 
 
 void insertNode(point p, node *parentNode, int level) {
+  // printf("inserting   point [%lf][%lf]\n", p.x, p.y);
   if(parentNode->has_particles > 1) {
-    printf("sub");
     // need to put into child, lets determine which
     if(p.x > BOUNDARY / (level + 1)) {
       // were in eastern blocks
       if(p.y > BOUNDARY / (level + 1)) {
+        printf("ne|");
         insertNode(p, parentNode->ne, level + 1); // northeast
       } else {
+        printf("se|");
         insertNode(p, parentNode->se, level + 1); // southeast
       }
     } else {
       // were in western blocks
       if(p.y > BOUNDARY / (level + 1)) {
+        printf("nw|");
         insertNode(p, parentNode->nw, level + 1); // northeast
       } else {
+        printf("sw|");
         insertNode(p, parentNode->sw, level + 1); // northeast
       }
     }
@@ -220,7 +224,7 @@ void insertNode(point p, node *parentNode, int level) {
 
 void buildTree(std::vector<point> &p) {
   for(unsigned i = 0; i < p.size(); i++) {
-    printf("root level is %d\n", root.level);
+    printf("inserting p with [%lf][%lf]\n", p[i].x, p[i].y);
     insertNode(p[i], &root, root.level);
 
   }
@@ -245,7 +249,7 @@ int main(int argc, char* argv[]){
   srand( 1234567 );//time(NULL) ); // set seed for random
 
   // create the central and heavier body
-  createBody(0, 0, 0, 0, r(10), r(10), abs(r(20)) + 10, bodies);
+  createBody(1, 1, 0, 0, r(10), r(10), abs(r(20)) + 10, bodies); // slightly of middle
   for(int i = 1; i < num_planets; i++) {
     createBody(r(100), r(100), r(4), r(4), r(10), r(10), abs(r(4)) + 1, bodies);
   }
