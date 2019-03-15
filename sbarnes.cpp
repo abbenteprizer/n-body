@@ -1,3 +1,7 @@
+/**
+Written by Albert Gunneström
+2019-03-20
+*/
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -12,6 +16,7 @@
 // #define G 6.67e-11
 #define DIMENSION 100
 #define TIMESTEP 0.1
+#define BOUNDARY 500 // The limits of the barnes hut root square
 
 double G = 6.67e-11;
 int num_planets;
@@ -28,6 +33,20 @@ struct point {
   double m; // mass
 };
 
+struct node {
+  int has_particles; // 1 if it contains particle
+  int has_innerpoint;
+  point innerpoint;
+  int level;
+/* all the children */
+  node *nw;
+  node *ne;
+  node *sw;
+  node *se;
+};
+
+node root; // root node
+
 /* benchmark code */
 double read_timer() {
     static bool initialized = false;
@@ -41,8 +60,6 @@ double read_timer() {
     gettimeofday( &end, NULL );
     return (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
 }
-
-
 
 void calcForces(std::vector<point> &p){ // p contains all points
   double distance, magnitude, direction;
@@ -122,14 +139,88 @@ double r(int range) {
 }
 
 
+void insertNode(point p, node *parentNode, int level) {
+  if(parentNode->has_particles > 1) {
+    // need to put into child, lets determine which
+    if(p.x > BOUNDARY / (level + 1)) {
+      // were in eastern blocks
+      if(p.y > BOUNDARY / (level + 1)) {
+        insertNode(p, parentNode->ne, level + 1); // northeast
+      } else {
+        insertNode(p, *parentNode->se, level + 1); // southeast
+      }
+    } else {
+      // were in western blocks
+      if(p.y > BOUNDARY / (level + 1)) {
+        insertNode(p, *parentNode.nw, level + 1); // northeast
+      } else {
+        insertNode(p, *parentNode.sw, level + 1); // northeast
+      }
+    }
+
+  } else if (parentNode.has_particles == 1){
+    *parentNode.nw = (node*) malloc(sizeof(node)); // allocate all children
+    *parentNode.ne = (node*) malloc(sizeof(node));
+    *parentNode.sw = (node*) malloc(sizeof(node));
+    *parentNode.se = (node*) malloc(sizeof(node));
+
+    *parentNode.nw->level = level + 1; // increase level for child
+    *parentNode.ne->level = level + 1;
+    *parentNode.sw->level = level + 1;
+    *parentNode.se->level = level + 1;
+
+    if(*parentNode.innerpoint.x > BOUNDARY / (level + 1)) {
+      // were in eastern blocks
+      if(*parentNode.innerpoint.y > BOUNDARY / (level + 1)) {
+        insertNode(*parentNode.innerpoint, *parentNode.ne, level + 1); // northeast
+        insertNode(p, *parentNode.ne, level + 1); // northeast
+      } else {
+        insertNode(*parentNode.innerpoint, *parentNode.se, level + 1); // southeast
+        insertNode(p, *parentNode.se, level + 1); // southeast
+      }
+    } else {
+      // were in western blocks
+      if(*parentNode.innerpoint.y > BOUNDARY / (level + 1)) {
+        insertNode(*parentNode.innerpoint, *parentNode.nw, level + 1); // northwest
+        insertNode(p, *parentNode.nw, level + 1); // northwest
+      } else {
+        insertNode(*parentNode.innerpoint, *parentNode.sw, level + 1); // southwest
+        insertNode(p, *parentNode.sw, level + 1); // southwest
+      }
+    }
+    *parentNode.has_innerpoint = 0;
+    *parentNode.has_particles++;
+  } else {
+    printf("parent has %d\n", *parentNode.has_particles);
+    *parentNode.has_particles++;
+    *parentNode.innerpoint = p;
+    *parentNode.has_innerpoint = 1;
+    printf("added particle on level %d\n", *parentNode.level);
+
+  }
+}
+
+void buildTree(std::vector<point> &p) {
+  for(unsigned i = 0; i < p.size(); i++) {
+    printf("root level is %d\n", root.level);
+    insertNode(p[i], &root, root.level);
+
+  }
+}
+
+
 int main(int argc, char* argv[]){
   num_planets = (argc > 1) ? atoi(argv[1]): 120;
   int num_iterations = (argc > 2) ? atoi(argv[2]): 1000;
-  
+
   /* create bodies */
   vector<point> bodies;
-  // just for fun
+
   G = 1.0; // This greatly increase the gravity
+
+  root.level = 1; // remember this
+  root.has_particles = 0;
+  root.has_innerpoint = 0;
 
   // args are in form: (xp, yp, vx, vy, fx, fy, m, &bodies)
 
@@ -148,6 +239,9 @@ int main(int argc, char* argv[]){
 
   /* uses TIMESTEP for making time discrete */
   for(int i = 0; i < num_iterations; i++){
+    /* build tree */
+    buildTree(bodies);
+
     /* calculateForces */
     calcForces(bodies);
 
