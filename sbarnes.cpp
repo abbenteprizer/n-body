@@ -116,7 +116,8 @@ void moveBodies(std::vector<point> &p) {
 
 }
 
-void createBody(double xp, double yp, double vx, double vy, double fx, double fy, double m, std::vector<point> &bodies) {
+void createBody(double xp, double yp, double vx, double vy, double fx, double fy,
+                double m, std::vector<point> &bodies) {
   point* newPoint = new point;
   newPoint->x = xp;
   newPoint->y = yp;
@@ -239,7 +240,8 @@ void insertNode(point p, node *parentNode, int level, double xlow, double ylow) 
     parentNode->has_particles = parentNode->has_particles + 1;
     parentNode->innerpoint = p;
     parentNode->has_innerpoint = 1;
-    printf("added point [%lf,%lf] on level %d %lf %lf\n", p.x, p.y, parentNode->level, parentNode->xlow,parentNode->xhigh);
+    printf("added point [%lf,%lf] on level %d %lf %lf\n",
+           p.x, p.y, parentNode->level, parentNode->xlow,parentNode->xhigh);
 
 
   }
