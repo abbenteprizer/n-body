@@ -148,25 +148,29 @@ void setBound(node *newNode, double xl, double xh, double yl, double yh){
   newNode->ylow = yl;
   newNode->yhigh = yh;
 }
-// xmid ymid is middle node division
-void insertNode(point p, node *parentNode, int level, double xmid, double ymid) {
+// xlow ylow is middle node division
+void insertNode(point p, node *parentNode, int level, double xlow, double ylow) {
   // printf("inserting   point [%lf][%lf]\n", p.x, p.y);
-  double lb = (BOUNDARY / (level)) / 2; // local boundary
+  double lb = (BOUNDARY / (std::pow(2,level))) * 2; // local boundary
   if(parentNode->has_particles > 1) {
     // need to put into child, lets determine which
-    if(p.x > xmid) {
+    if(p.x > xlow + lb) {
       // were in eastern blocks
-      if(p.y > ymid) {
-        insertNode(p, parentNode->ne, level + 1, xmid + lb, ymid + lb); // northeast
+      if(p.y > ylow + lb) {
+        printf("insert into ne\n");
+        insertNode(p, parentNode->ne, level + 1, xlow + lb, ylow + lb); // northeast
       } else {
-        insertNode(p, parentNode->se, level + 1, xmid + lb, ymid - lb); // southeast
+        printf("insert into se\n");
+        insertNode(p, parentNode->se, level + 1, xlow + lb, ylow - lb); // southeast
       }
     } else {
       // were in western blocks
-      if(p.y > ymid) {
-        insertNode(p, parentNode->nw, level + 1, xmid - lb, ymid + lb); // northwest
+      if(p.y > ylow + lb) {
+        printf("insert into nw\n");
+        insertNode(p, parentNode->nw, level + 1, xlow - lb, ylow + lb); // northwest
       } else {
-        insertNode(p, parentNode->sw, level + 1, xmid - lb, ymid - lb); // southwest
+        printf("insert into sw\n");
+        insertNode(p, parentNode->sw, level + 1, xlow - lb, ylow - lb); // southwest
       }
     }
 
@@ -181,10 +185,10 @@ void insertNode(point p, node *parentNode, int level, double xmid, double ymid) 
     parentNode->sw = (node*) malloc(sizeof(struct node));
     parentNode->se = (node*) malloc(sizeof(struct node));
 
-    setBound(parentNode->nw, xmid - lb, xmid, ymid, ymid + lb);
-    setBound(parentNode->ne, xmid, xmid + lb, ymid, ymid + lb);
-    setBound(parentNode->sw, xmid - lb, xmid, ymid - lb, ymid);
-    setBound(parentNode->se, xmid, xmid + lb, ymid - lb, ymid);
+    setBound(parentNode->nw, xlow - lb, xlow, ylow, ylow + lb);
+    setBound(parentNode->ne, xlow, xlow + lb, ylow, ylow + lb);
+    setBound(parentNode->sw, xlow - lb, xlow, ylow - lb, ylow);
+    setBound(parentNode->se, xlow, xlow + lb, ylow - lb, ylow);
 
     parentNode->nw->level = level + 1; // increase level for child
     parentNode->ne->level = level + 1;
@@ -193,37 +197,40 @@ void insertNode(point p, node *parentNode, int level, double xmid, double ymid) 
 
 
     /* insert innerpoint in subnode */
-    if(parentNode->innerpoint.x > xmid) {
-      printf("innerpoint.x was %lf, and xmid was %lf\n", parentNode->innerpoint.x, xmid);
+    if(parentNode->innerpoint.x > xlow + lb) {
       // were in eastern blocks
-      if(parentNode->innerpoint.y > ymid) {
-        insertNode(parentNode->innerpoint, parentNode->ne, level + 1, xmid + lb, ymid + lb); // northeast
+      if(parentNode->innerpoint.y > ylow + lb) {
+        printf("insert into ne\n");
+        insertNode(parentNode->innerpoint, parentNode->ne, level + 1, xlow + lb, ylow + lb); // northeast
       } else {
-        insertNode(parentNode->innerpoint, parentNode->se, level + 1, xmid + lb, ymid - lb); // southeast
+        printf("insert into se\n");
+        insertNode(parentNode->innerpoint, parentNode->se, level + 1, xlow + lb, ylow - lb); // southeast
       }
     } else {
       // were in western blocks
-      if(parentNode->innerpoint.y > ymid) {
-        insertNode(parentNode->innerpoint, parentNode->nw, level + 1, xmid - lb, ymid + lb); // northwest
+      if(parentNode->innerpoint.y > ylow + lb) {
+        printf("insert into nw\n");
+        insertNode(parentNode->innerpoint, parentNode->nw, level + 1, xlow - lb, ylow + lb); // northwest
       } else {
-        insertNode(parentNode->innerpoint, parentNode->sw, level + 1, xmid - lb, ymid - lb); // southwest
+        printf("insert into sw\n");
+        insertNode(parentNode->innerpoint, parentNode->sw, level + 1, xlow - lb, ylow - lb); // southwest
       }
     }
 
     /* insert p in subnode */
-    if(p.x > xmid) {
+    if(p.x > xlow + lb) {
       // were in eastern blocks
-      if(p.y > ymid) {
-        insertNode(p, parentNode->ne, level + 1, xmid + lb, ymid + lb); // northeast
+      if(p.y > ylow + lb) {
+        insertNode(p, parentNode->ne, level + 1, xlow + lb, ylow + lb); // northeast
       } else {
-        insertNode(p, parentNode->se, level + 1, xmid + lb, ymid - lb); // southeast
+        insertNode(p, parentNode->se, level + 1, xlow + lb, ylow - lb); // southeast
       }
     } else {
       // were in western blocks
-      if(p.y > ymid) {
-        insertNode(p, parentNode->nw, level + 1, xmid - lb, ymid + lb); // northwest
+      if(p.y > ylow + lb) {
+        insertNode(p, parentNode->nw, level + 1, xlow - lb, ylow + lb); // northwest
       } else {
-        insertNode(p, parentNode->sw, level + 1, xmid - lb, ymid - lb); // southwest
+        insertNode(p, parentNode->sw, level + 1, xlow - lb, ylow - lb); // southwest
       }
     }
 
@@ -232,8 +239,7 @@ void insertNode(point p, node *parentNode, int level, double xmid, double ymid) 
     parentNode->has_particles = parentNode->has_particles + 1;
     parentNode->innerpoint = p;
     parentNode->has_innerpoint = 1;
-    printf("added point on level %d, in region [%lf, %lf, %lf][%lf, %lf, %lf]\n ",
-            parentNode->level, xmid - lb, p.x, xmid + lb, ymid - lb, p.y, ymid + lb);
+    printf("added point [%lf,%lf] on level %d %lf %lf\n", p.x, p.y, parentNode->level, parentNode->xlow,parentNode->xhigh);
 
 
   }
@@ -242,7 +248,7 @@ void insertNode(point p, node *parentNode, int level, double xmid, double ymid) 
 void buildTree(std::vector<point> &p) {
   for(unsigned i = 0; i < p.size(); i++) {
     printf("inserting p with [%lf][%lf]\n", p[i].x, p[i].y);
-    insertNode(p[i], &root, root.level, 0, 0);
+    insertNode(p[i], &root, root.level, -500, -500);
 
   }
 }
@@ -260,6 +266,7 @@ int main(int argc, char* argv[]){
   root.level = 1; // remember this
   root.has_particles = 0;
   root.has_innerpoint = 0;
+  setBound(&root, -500, 500, -500, 500);
 
   // args are in form: (xp, yp, vx, vy, fx, fy, m, &bodies)
 
