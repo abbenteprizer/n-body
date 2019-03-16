@@ -52,7 +52,7 @@ struct point {
 //   node *se;
 // };
 
-node root; // root node
+
 
 /* benchmark code */
 double read_timer() {
@@ -147,6 +147,11 @@ double r(int range) {
   return retval;// random double
 }
 
+BoundingBox myboundary = BoundingBoxMake( -500,  -500,  500,  500);
+int capacity = 1; // max number of bodies allowed inside a node
+QuadTree qtree = QuadTreeMake(myboundary, capacity);
+// QuadTreeNode* qtree =
+
 void buildTree(std::vector<point> &p) {
   for(unsigned i = 0; i < p.size(); i++) {
     printf("inserting p with [%lf][%lf]\n", p[i].x, p[i].y);
@@ -175,11 +180,9 @@ int main(int argc, char* argv[]){
     createBody(r(100), r(100), r(4), r(4), r(10), r(10), abs(r(4)) + 1, bodies);
   }
 
-  BoundingBox myboundary = BoundingBoxMake( -500,  -500,  500,  500);
-  int capacity = 1; // max number of bodies allowed inside a node
-  QuadTreeNode* qtree =  QuadTreeMake(myboundary, capacity);
 
-  QuadTreeNodeDataMake
+
+  // QuadTreeNodeDataMake
 
 
   double start_time, end_time; /* start and end times */

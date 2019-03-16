@@ -6,7 +6,7 @@
 //
 
 #include <iostream>
-#include "QuadTree.h"
+#include "QuadTreeNode.h"
 
 /**
  * Create an instance of a QuadTreeNodeData struct and fill it
