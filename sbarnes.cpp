@@ -21,6 +21,7 @@ Written by Albert Gunneström
 
 double G = 6.67e-11;
 int num_planets;
+int theta;
 
 using namespace std;
 
@@ -95,7 +96,7 @@ void calcForces(std::vector<point> &p){ // p contains all points
 
 std::tuple<double,double,double> calcMasses(node* thisNode) {
     if(thisNode->has_particles == 0) {
-      // printf("now return for particle is 0\n");
+      printf("now return for particle is 0\n");
       return std::make_tuple(0,0,0); // shuoldnt have any efffect since mass 0
     }
     else if(thisNode->has_particles == 1) {
@@ -129,6 +130,7 @@ std::tuple<double,double,double> calcMasses(node* thisNode) {
     thisNode->cmx = totCMx;
     thisNode->cmy = totCMy;
     thisNode->totalmass = totMassBelow;
+    // printf("cmx = %lf, cmy = %lf, totmass = %lf\n", totCMx, totCMy, totMassBelow);
     return {totCMx, totCMy, totMassBelow};
   }
 }
@@ -157,22 +159,86 @@ void moveBodies(std::vector<point> &p) {
 
 }
 
-void nodeForce(node* thisNode){
+// returns force pair
+std::tuple<double,double> nodeForce(node* thisNode){
   // All forces initially zero
-  if(thisNode->has_innerpoint == 1) {
+  if(thisNode->has_particles == 1) {
     double distance, magnitude, direction;
     double xd, yd; // partial directions
+    double e = 0.001; // margin to avoid zero division
 
+    // calculate like in N²
     distance = std::sqrt( std::pow((thisNode->cmx - thisNode->innerpoint.x), 2) +
                           std::pow((thisNode->cmy - thisNode->innerpoint.y), 2) );
 
+    if(distance < e){ // avoids dividing by zero
+      distance = e;
+      // printf("too close the distance was %lf\n", distance);
+    }
+
     magnitude = (G * thisNode->innerpoint.m * thisNode->totalmass) / std::pow(distance, 2);
 
-    double sizeBox = thisNode->level
+    xd = thisNode->cmx - thisNode->innerpoint.x; // direction with respect to x
+    yd = thisNode->cmy - thisNode->innerpoint.y; // direction with respect to y
+    // printf("did we get here?\n");
+    /* update forces */
+    /* point only affected by big point, not the opposite */
+    thisNode->innerpoint.fx = thisNode->innerpoint.fx + magnitude * xd / distance; // make not inf
+    // thisNode->.fx = thisNode->.fx - magnitude * xd / distance;
+    thisNode->innerpoint.fy = thisNode->innerpoint.fy + magnitude * yd / distance;
+    // thisNode->.fy = thisNode->.fy - magnitude * yd / distance;
+    return {thisNode->innerpoint.fx, thisNode->innerpoint.fy};
 
+  } else {
+      double distance = std::sqrt( std::pow((thisNode->cmx - thisNode->innerpoint.x), 2) +
+                                   std::pow((thisNode->cmy - thisNode->innerpoint.y), 2) );
+
+      double sizeBox = BOUNDARY / (thisNode->level + 1); // Correct?
+
+      if((sizeBox / distance) < theta) {
+        double distance, magnitude, direction;
+        double xd, yd; // partial directions
+        double e = 0.001; // margin to avoid zero division
+
+        // calculate like in N²
+        distance = std::sqrt( std::pow((thisNode->cmx - thisNode->innerpoint.x), 2) +
+                              std::pow((thisNode->cmy - thisNode->innerpoint.y), 2) );
+
+        if(distance < e){ // avoids dividing by zero
+          distance = e;
+          // printf("too close the distance was %lf\n", distance);
+        }
+
+        magnitude = (G * thisNode->innerpoint.m * thisNode->totalmass) / std::pow(distance, 2);
+
+        xd = thisNode->cmx - thisNode->innerpoint.x; // direction with respect to x
+        yd = thisNode->cmy - thisNode->innerpoint.y; // direction with respect to y
+        // printf("did we get here?\n");
+        /* update forces */
+        /* point only affected by big point, not the opposite */
+        thisNode->innerpoint.fx = thisNode->innerpoint.fx + magnitude * xd / distance; // make not inf
+        // thisNode->.fx = thisNode->.fx - magnitude * xd / distance;
+        thisNode->innerpoint.fy = thisNode->innerpoint.fy + magnitude * yd / distance;
+        // thisNode->.fy = thisNode->.fy - magnitude * yd / distance;
+        return {thisNode->innerpoint.fx, thisNode->innerpoint.fy};
+
+      } else {
+        double xforce, yforce;
+        double tx1, ty1, tx2, ty2, tx3, ty3, tx4, ty4; // tmp forces
+        printf("now optimized\n");
+        tie(tx1,ty1) = nodeForce(thisNode->ne);
+        tie(tx2,ty2) = nodeForce(thisNode->nw);
+        tie(tx3,ty3) = nodeForce(thisNode->se);
+        tie(tx4,ty4) = nodeForce(thisNode->sw);
+
+        xforce = tx1 + tx2 + tx3 + tx4;
+        yforce = ty1 + ty2 + ty3 + ty4;
+
+        thisNode->innerpoint.fx = xforce;
+        thisNode->innerpoint.fy = yforce;
+
+      }
   }
-
-
 }
 
 void createBody(double xp, double yp, double vx, double vy, double fx, double fy,
@@ -327,7 +393,10 @@ void buildTree(std::vector<point> &p) {
 
 int main(int argc, char* argv[]){
   num_planets = (argc > 1) ? atoi(argv[1]): 120;
-  int num_iterations = (argc > 2) ? atoi(argv[2]): 1000;
+  int far = (argc > 2) ? atoi(argv[2]): 50;
+  int num_iterations = (argc > 3) ? atoi(argv[3]): 1000;
+
+  theta = BOUNDARY / far; // should be slightly less than zero
 
   /* create bodies */
   vector<point> bodies;
@@ -357,14 +426,18 @@ int main(int argc, char* argv[]){
   /* uses TIMESTEP for making time discrete */
   for(int i = 0; i < num_iterations; i++){
     /* build tree */
+    printf("work 1\n");
     buildTree(bodies);
 
     /* calculateForces */
     // calcForces(bodies);
-    // double cmx, cmy, m;
+    double cmx, cmy, m;
     tie(cmx,cmy,m) = calcMasses(&root);
+    printf("work 2\n");
+
     // printf("mass center was %lf %lf, with totmass %lf\n", cmx, cmy, m);
     nodeForce(&root);
+    printf("work 3\n");
 
     /* move bodies */
     // moveBodies(bodies);
