@@ -17,7 +17,7 @@ Written by Albert Gunneström
 // #define G 6.67e-11
 #define DIMENSION 100
 #define TIMESTEP 0.1
-#define BOUNDARY 500. // The limits of the barnes hut root square
+#define BOUNDARY 1000. // The limits of the barnes hut root square
 
 double G = 6.67e-11;
 int num_planets;
@@ -50,12 +50,6 @@ struct node {
   node *se;
 };
 
-// struct massinfo {
-//   double cmx; // center mass
-//   double cmy;
-//   double totalmass; // totalmass
-// };
-
 node root; // root node
 
 /* benchmark code */
@@ -78,8 +72,8 @@ void calcForces(std::vector<point> &p){ // p contains all points
   double e = 0.001; // margin to avoid zero division
   for(unsigned i = 0; i < p.size() - 1; i++) {
     for(unsigned j = i + 1; j < p.size(); j++) {
-      distance = std::sqrt( std::pow((p[i].x - p[j].x), 2 ) +
-  			                    std::pow((p[i].y - p[j].y),2) );
+      distance = std::sqrt( std::pow((p[i].x - p[j].x), 2) +
+  			                    std::pow((p[i].y - p[j].y), 2) );
       if(distance < e){ // avoids dividing by zero
         distance = e;
         // printf("too close the distance was %lf\n", distance);
@@ -99,19 +93,44 @@ void calcForces(std::vector<point> &p){ // p contains all points
   }
 }
 
-double* calcMasses(node* thisNode) {
-  if(thisNode->has_particles == 1) {
-
-    thisNode->cmx = thisNode-> thisNode->innerpoint.x;
-    thisNode->cmy = thisNode-> thisNode->innerpoint.y;
+std::tuple<double,double,double> calcMasses(node* thisNode) {
+    if(thisNode->has_particles == 0) {
+      // printf("now return for particle is 0\n");
+      return std::make_tuple(0,0,0); // shuoldnt have any efffect since mass 0
+    }
+    else if(thisNode->has_particles == 1) {
+    /* calc for leaf */
+    printf("now inside calcMass\n");
+    thisNode->cmx = thisNode->innerpoint.x;
+    thisNode->cmy = thisNode->innerpoint.y;
     thisNode->totalmass = thisNode->innerpoint.m;
+    // printf("local has %lf %lf %lf \n", thisNode->cmx, thisNode->cmy, thisNode->totalmass);
 
-    return
+    // returns tuple
+    return std::make_tuple(thisNode->cmx, thisNode->cmy, thisNode->totalmass);
   } else {
+    /* calc for higher up */
+    printf("now inside else\n");
+    double xne, xnw, xse, xsw, yne, ynw, yse, ysw,
+           massne, massnw, massse, masssw, totCMx, totCMy;
 
+    tie(xne, yne, massne) = calcMasses(thisNode->ne);
+    tie(xnw, ynw, massnw) = calcMasses(thisNode->nw);
+    tie(xse, yse, massse) = calcMasses(thisNode->se);
+    tie(xsw, ysw, masssw) = calcMasses(thisNode->sw);
+
+    double totMassBelow = massne + massnw + massse + masssw;
+    if(totMassBelow != 0) {
+    double totCMx = (massne * xne + massnw * xnw + massse * xse + masssw * xsw) / totMassBelow;
+    double totCMy = (massne * yne + massnw * ynw + massse * yse + masssw * ysw) / totMassBelow;
+    } else {
+      printf("mass was zero\n");
+    }
+    thisNode->cmx = totCMx;
+    thisNode->cmy = totCMy;
+    thisNode->totalmass = totMassBelow;
+    return {totCMx, totCMy, totMassBelow};
   }
-
-
 }
 
 
@@ -135,6 +154,24 @@ void moveBodies(std::vector<point> &p) {
     p[i].fx = p[i].fy = 0.0; //reset force vector
 
   }
+
+}
+
+void nodeForce(node* thisNode){
+  // All forces initially zero
+  if(thisNode->has_innerpoint == 1) {
+    double distance, magnitude, direction;
+    double xd, yd; // partial directions
+
+    distance = std::sqrt( std::pow((thisNode->cmx - thisNode->innerpoint.x), 2) +
+                          std::pow((thisNode->cmy - thisNode->innerpoint.y), 2) );
+
+    magnitude = (G * thisNode->innerpoint.m * thisNode->totalmass) / std::pow(distance, 2);
+
+    double sizeBox = thisNode->level
+
+  }
+
 
 }
 
@@ -268,7 +305,7 @@ void insertNode(point p, node *parentNode, int level, double xlow, double ylow, 
 void cleanUp() {
   root.has_particles = 0;
   // if(root.has_innerpoint)
-  //   free(root.innerpoint);
+    // root.innerpoint = NULL;
   root.has_innerpoint = 0;
   free(root.ne);
   free(root.nw);
@@ -324,10 +361,13 @@ int main(int argc, char* argv[]){
 
     /* calculateForces */
     // calcForces(bodies);
-    calcMasses();
+    // double cmx, cmy, m;
+    tie(cmx,cmy,m) = calcMasses(&root);
+    // printf("mass center was %lf %lf, with totmass %lf\n", cmx, cmy, m);
+    nodeForce(&root);
 
     /* move bodies */
-    moveBodies(bodies);
+    // moveBodies(bodies);
   }
   end_time = read_timer();
 
