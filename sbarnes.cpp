@@ -6,6 +6,7 @@ Written by Albert Gunneström
 #include <cmath>
 #include <vector>
 #include <cstdlib>
+#include <tuple>
 #include <omp.h>
 #include <limits>
 #include <stdio.h>
@@ -38,10 +39,9 @@ struct node {
   int has_innerpoint;
   point innerpoint;
   int level;
-  double xlow;
-  double xhigh;
-  double ylow;
-  double yhigh;
+  double cmx; // center mass
+  double cmy;
+  double totalmass; // totalmass
 
 /* all the children */
   node *nw;
@@ -49,6 +49,12 @@ struct node {
   node *sw;
   node *se;
 };
+
+// struct massinfo {
+//   double cmx; // center mass
+//   double cmy;
+//   double totalmass; // totalmass
+// };
 
 node root; // root node
 
@@ -92,6 +98,22 @@ void calcForces(std::vector<point> &p){ // p contains all points
     }
   }
 }
+
+double* calcMasses(node* thisNode) {
+  if(thisNode->has_particles == 1) {
+
+    thisNode->cmx = thisNode-> thisNode->innerpoint.x;
+    thisNode->cmy = thisNode-> thisNode->innerpoint.y;
+    thisNode->totalmass = thisNode->innerpoint.m;
+
+    return
+  } else {
+
+  }
+
+
+}
+
 
 void moveBodies(std::vector<point> &p) {
   double dvx, dvy, dpx, dpy; // partial velocities and positions
@@ -243,7 +265,21 @@ void insertNode(point p, node *parentNode, int level, double xlow, double ylow, 
   }
 }
 
+void cleanUp() {
+  root.has_particles = 0;
+  // if(root.has_innerpoint)
+  //   free(root.innerpoint);
+  root.has_innerpoint = 0;
+  free(root.ne);
+  free(root.nw);
+  free(root.se);
+  free(root.sw);
+}
+
 void buildTree(std::vector<point> &p) {
+  // lets empty root before filling it again
+  cleanUp();
+
   for(unsigned i = 0; i < p.size(); i++) {
     // printf("inserting p with [%lf][%lf]\n", p[i].x, p[i].y);
     insertNode(p[i], &root, root.level, -500, -500, 1000);
@@ -287,7 +323,8 @@ int main(int argc, char* argv[]){
     buildTree(bodies);
 
     /* calculateForces */
-    calcForces(bodies);
+    // calcForces(bodies);
+    calcMasses();
 
     /* move bodies */
     moveBodies(bodies);
